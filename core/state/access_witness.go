@@ -17,8 +17,11 @@
 package state
 
 import (
+	"encoding/hex"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/holiman/uint256"
@@ -94,6 +97,7 @@ func (aw *AccessWitness) TouchFullAccount(addr []byte, isWrite bool) uint64 {
 	for i := utils.VersionLeafKey; i <= utils.CodeSizeLeafKey; i++ {
 		gas += aw.touchAddressAndChargeGas(addr, zeroTreeIndex, byte(i), isWrite)
 	}
+	log.Info("TouchFullAccount charged gas", "addr", hex.EncodeToString(addr), "gas", gas)
 	return gas
 }
 
@@ -101,6 +105,7 @@ func (aw *AccessWitness) TouchAndChargeMessageCall(addr []byte) uint64 {
 	var gas uint64
 	gas += aw.touchAddressAndChargeGas(addr, zeroTreeIndex, utils.VersionLeafKey, false)
 	gas += aw.touchAddressAndChargeGas(addr, zeroTreeIndex, utils.CodeSizeLeafKey, false)
+	log.Info("TouchAndChargeMessageCall charged gas", "addr", hex.EncodeToString(addr), "gas", gas)
 	return gas
 }
 
@@ -108,6 +113,7 @@ func (aw *AccessWitness) TouchAndChargeValueTransfer(callerAddr, targetAddr []by
 	var gas uint64
 	gas += aw.touchAddressAndChargeGas(callerAddr, zeroTreeIndex, utils.BalanceLeafKey, true)
 	gas += aw.touchAddressAndChargeGas(targetAddr, zeroTreeIndex, utils.BalanceLeafKey, true)
+	log.Info("TouchAndChargeValueTransfer charged gas", "caller", hex.EncodeToString(callerAddr), "target", hex.EncodeToString(targetAddr), "gas", gas)
 	return gas
 }
 
@@ -120,6 +126,7 @@ func (aw *AccessWitness) TouchAndChargeContractCreateInit(addr []byte, createSen
 	if createSendsValue {
 		gas += aw.touchAddressAndChargeGas(addr, zeroTreeIndex, utils.BalanceLeafKey, true)
 	}
+	log.Info("TouchAndChargeContractCreateInit charged gas", "addr", hex.EncodeToString(addr), "gas", gas)
 	return gas
 }
 
@@ -155,7 +162,10 @@ func (aw *AccessWitness) TouchTxExistingAndComputeGas(targetAddr []byte, sendsVa
 
 func (aw *AccessWitness) TouchSlotAndChargeGas(addr []byte, slot common.Hash, isWrite bool) uint64 {
 	treeIndex, subIndex := utils.GetTreeKeyStorageSlotTreeIndexes(slot.Bytes())
-	return aw.touchAddressAndChargeGas(addr, *treeIndex, subIndex, isWrite)
+	var gas uint64
+	gas = aw.touchAddressAndChargeGas(addr, *treeIndex, subIndex, isWrite)
+	log.Info("touchSlotAndChargeGas charged gas", "addr", hex.EncodeToString(addr), "slot", slot, "gas", gas)
+	return gas
 }
 
 func (aw *AccessWitness) touchAddressAndChargeGas(addr []byte, treeIndex uint256.Int, subIndex byte, isWrite bool) uint64 {
@@ -177,6 +187,7 @@ func (aw *AccessWitness) touchAddressAndChargeGas(addr []byte, treeIndex uint256
 	if selectorFill {
 		gas += params.WitnessChunkFillCost
 	}
+	log.Info("  ==> touchAddressAndChargeGas charged gas", "addr", hex.EncodeToString(addr), "gas", gas)
 
 	return gas
 }
