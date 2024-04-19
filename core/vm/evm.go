@@ -24,7 +24,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
+
 	"github.com/holiman/uint256"
 )
 
@@ -552,6 +554,8 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 			evm.Config.Tracer.CaptureExit(ret, gas-contract.Gas, err)
 		}
 	}
+	log.Info("create contract gas consumed", "addr", address, "gas", contract.Gas)
+
 	return ret, address, contract.Gas, err
 }
 
