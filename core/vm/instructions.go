@@ -25,6 +25,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
+	"fmt"
 )
 
 func opAdd(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
@@ -372,7 +373,9 @@ func opCodeCopy(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([
 	paddedCodeCopy, copyOffset, nonPaddedCopyLength := getDataAndAdjustedBounds(scope.Contract.Code, uint64CodeOffset, length.Uint64())
 	if interpreter.evm.chainRules.IsEIP4762 && !scope.Contract.IsDeployment {
 		statelessGas := interpreter.evm.Accesses.TouchCodeChunksRangeAndChargeGas(contractAddr[:], copyOffset, nonPaddedCopyLength, uint64(len(scope.Contract.Code)), false)
+			fmt.Println("statelessGas ",statelessGas)
 		if !scope.Contract.UseGas(statelessGas) {
+			fmt.Println("not enough gas ",statelessGas)
 			scope.Contract.Gas = 0
 			return nil, ErrOutOfGas
 		}
@@ -954,12 +957,13 @@ func opPush1(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]by
 	*pc += 1
 	if *pc < codeLen {
 		scope.Stack.push(integer.SetUint64(uint64(scope.Contract.Code[*pc])))
-
+		 //fmt.Println("push ",!scope.Contract.IsDeployment,*pc, *pc%31)
 		if !scope.Contract.IsDeployment && interpreter.evm.chainRules.IsPrague && *pc%31 == 0 {
 			// touch next chunk if PUSH1 is at the boundary. if so, *pc has
 			// advanced past this boundary.
 			contractAddr := scope.Contract.Address()
 			statelessGas := interpreter.evm.Accesses.TouchCodeChunksRangeAndChargeGas(contractAddr[:], *pc+1, uint64(1), uint64(len(scope.Contract.Code)), false)
+	    //fmt.Println("statelessGas ",statelessGas)
 			if !scope.Contract.UseGas(statelessGas) {
 				scope.Contract.Gas = 0
 				return nil, ErrOutOfGas
@@ -986,9 +990,11 @@ func makePush(size uint64, pushByteSize int) executionFunc {
 			endMin = startMin + pushByteSize
 		}
 
+		 //fmt.Println("pushN ",!scope.Contract.IsDeployment,startMin, pushByteSize, uint64(len(scope.Contract.Code)))
 		if !scope.Contract.IsDeployment && interpreter.evm.chainRules.IsPrague {
 			contractAddr := scope.Contract.Address()
 			statelessGas := interpreter.evm.Accesses.TouchCodeChunksRangeAndChargeGas(contractAddr[:], uint64(startMin), uint64(pushByteSize), uint64(len(scope.Contract.Code)), false)
+      	//fmt.Println("statelessGas ",statelessGas)
 			if !scope.Contract.UseGas(statelessGas) {
 				scope.Contract.Gas = 0
 				return nil, ErrOutOfGas

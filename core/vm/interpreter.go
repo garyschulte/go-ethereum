@@ -21,6 +21,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
+   "fmt"
 )
 
 // Config are the configuration options for the Interpreter
@@ -179,6 +180,9 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 			logged, pcCopy, gasCopy = false, pc, contract.Gas
 		}
 
+
+		gasBefore := contract.Gas;
+
 		if in.evm.chainRules.IsEIP4762 && !contract.IsDeployment {
 			// if the PC ends up in a new "chunk" of verkleized code, charge the
 			// associated costs.
@@ -186,6 +190,8 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 			contract.Gas -= in.evm.TxContext.Accesses.TouchCodeChunksRangeAndChargeGas(contractAddr[:], pc, 1, uint64(len(contract.Code)), false)
 		}
 
+
+		gasBefore2 := contract.Gas;
 		// Get the operation from the jump table and validate the stack to ensure there are
 		// enough stack items available to perform the operation.
 		op = contract.GetOp(pc)
@@ -223,6 +229,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 			var dynamicCost uint64
 			dynamicCost, err = operation.dynamicGas(in.evm, contract, stack, mem, memorySize)
 			cost += dynamicCost // for tracing
+
 			if err != nil || !contract.UseGas(dynamicCost) {
 				return nil, ErrOutOfGas
 			}
@@ -240,6 +247,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		}
 		// execute the operation
 		res, err = operation.execute(&pc, in, callContext)
+		fmt.Println("opcode ", op.String(), gasBefore-contract.Gas, gasBefore2-contract.Gas)
 		if err != nil {
 			break
 		}

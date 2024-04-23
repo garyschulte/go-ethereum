@@ -140,6 +140,7 @@ func NewEVM(blockCtx BlockContext, txCtx TxContext, statedb StateDB, chainConfig
 		chainRules:  chainConfig.Rules(blockCtx.BlockNumber, blockCtx.Random != nil, blockCtx.Time),
 	}
 	if txCtx.Accesses == nil && chainConfig.IsPrague(blockCtx.BlockNumber, blockCtx.Time) {
+		log.Info("block number ", blockCtx.BlockNumber)
 		evm.Accesses = evm.StateDB.(*state.StateDB).NewAccessWitness()
 	}
 	evm.interpreter = NewEVMInterpreter(evm)

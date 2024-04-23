@@ -25,6 +25,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/holiman/uint256"
+	"fmt"
 )
 
 // mode specifies how a tree location has been accessed
@@ -273,10 +274,12 @@ func (aw *AccessWitness) TouchCodeChunksRangeAndChargeGas(contractAddr []byte, s
 	}
 
 	var statelessGasCharged uint64
+	fmt.Println("begin charge gas ",startPC,endPC)
 	for chunkNumber := startPC / 31; chunkNumber <= endPC/31; chunkNumber++ {
 		treeIndex := *uint256.NewInt((chunkNumber + 128) / 256)
 		subIndex := byte((chunkNumber + 128) % 256)
 		gas := aw.touchAddressAndChargeGas(contractAddr, treeIndex, subIndex, isWrite)
+		fmt.Println("charge gas ",hex.EncodeToString(contractAddr),treeIndex,subIndex)
 		var overflow bool
 		statelessGasCharged, overflow = math.SafeAdd(statelessGasCharged, gas)
 		if overflow {
